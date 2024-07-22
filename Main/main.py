@@ -2,7 +2,7 @@ import os
 from API import StockManager
 
 debug = False
-__version__ = "1.2.4"
+__version__ = "1.0.0"
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
                 print(f"Unknown Error: {e}")
 
         while True:
-            ans = 'a' if debug else input("Select an action. (I=Show Company Info, H=Show History Data, U=Update History Data, L=LTSM Function, 0=Return)\n")
+            ans = 't' if debug else input("Select an action. (I=Show Company Info, H=Show History Data, U=Update History Data, T=Transformer, 0=Return)\n")
 
             if ans.lower() == "i":
                 # Show Company Info
@@ -45,9 +45,8 @@ def main():
             elif ans.lower() == "u":
                 # Update History Data
                 manager.stock_class_list[index].download_history_data()
-            elif ans.lower() == "l":
-                # LTSM Function
-                manager.stock_class_list[index].lstm_function()
+            elif ans.lower() == "t":
+                manager.stock_class_list[index].test()
             elif ans == "0":
                 break
 
