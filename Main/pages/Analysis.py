@@ -1,5 +1,5 @@
 import streamlit as st
-from Hello import manager
+from Welcome import manager
 
 stock_list = manager.get_stock_list()
 output_list = []

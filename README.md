@@ -4,7 +4,10 @@
 
 ## Version Info
 ### 2024/7/22 version 1.1.0
--- Implement streamlit function
+-- Fixed some issues.
+
+### 2024/7/22 version 1.1.0
+-- Implement streamlit function.
 
 ### 2024/7/22 version 1.0.0
 -- Submit prototype.

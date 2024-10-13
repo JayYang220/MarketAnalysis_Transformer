@@ -4,7 +4,7 @@ import time
 import streamlit as st
 from menu import menu_with_redirect
 from API import StockManager
-from Hello import manager
+from Welcome import manager
 
 def action_download(function, *args, output_list):
     output_list.append(st.empty())
