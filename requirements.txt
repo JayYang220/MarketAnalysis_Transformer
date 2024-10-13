@@ -2,7 +2,7 @@
 # cmake==3.30.4
 
 setuptools==49.2.1
-numpy==1.24.4
+numpy==1.24.3
 yfinance==0.2.37
 pandas==2.0.3
 scikit-learn==1.5.2
