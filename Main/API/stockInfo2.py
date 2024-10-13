@@ -10,26 +10,20 @@ from tensorflow.keras.layers import Dense, Flatten, MultiHeadAttention, LayerNor
 from tensorflow.keras.models import Model, Sequential
 import streamlit as st
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 # import matplotlib.pyplot as plt
-from common import debug_msg
 
-is_debug = True
 
 class StockManager:
-    __slots__ = ["history_data_folder_path", "stock_name_list", "stock_class_list", "msg", "is_action_successful"]
+    __slots__ = ["history_data_folder_path", "stock_name_list", "stock_class_list"]
 
     def __init__(self, abs_path):
-        self.history_data_folder_path = os.path.join(abs_path, "data")
+        self.history_data_folder_path = os.path.join(abs_path, "Data")
 
         # 讀取庫存的CSV名稱 集中成list管理
         self.stock_name_list = self.__init_load_stock_list()
 
         # 建立stock class 集中成list管理
         self.stock_class_list = self.__init_create_stock_class()
-
-        self.msg = []
-        self.is_action_successful = False
 
     def __init_load_stock_list(self):
         """讀取庫存的CSV名稱 集中成list管理"""
@@ -52,96 +46,33 @@ class StockManager:
 
     def create_stock_class(self, stock_name: str):
         """try create"""
-        self.msg.clear()
         if stock_name in self.stock_name_list:
-            self.is_action_successful = False
-            debug_msg(is_debug, "This stock already exists in the list.")
-            self.msg.append("This stock already exists in the list.")
+            print("This stock already exists in the list.")
             return
 
         # try downloading ticker
         try:
             stock = Stock(self.history_data_folder_path, stock_name)
 
-            if stock.download_ticker():
-                stock.download_history_data()
+            stock.download_ticker()
+            stock.download_history_data()
 
-                debug_msg(is_debug, f"{stock_name} Addition completed")
-                self.msg.append(f"{stock_name} Addition completed")
-
-                self.stock_class_list.append(stock)
-                self.stock_name_list.append(stock_name)
-                self.is_action_successful = True
-            else:
-                self.msg.append(f"{stock_name}: Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/.")
-                self.is_action_successful = False
+            self.stock_class_list.append(stock)
+            self.stock_name_list.append(stock_name)
+            print(f"{stock_name} Addition completed")
 
         except Exception as e:
-            self.is_action_successful = False
-            debug_msg(is_debug, e)
-            self.msg.append(f"{stock_name}: {e}")
+            print(e)
+            print("You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/")
             return
-
-    def remove_stock(self, stock_name: str):
-        try:
-            self.msg.clear()
-            stock_index = self.stock_name_list.index(stock_name)
-            path = self.stock_class_list[stock_index].history_data_file_path
-            os.remove(path)
-
-            self.stock_name_list.remove(stock_name)
-            self.stock_class_list.pop(stock_index)
-            self.msg.append(f"{stock_name}: Remove completed.")
-
-            self.is_action_successful = True
-        except Exception as e:
-            self.msg.append(f"{stock_name}: {e}")
-            self.is_action_successful = False
-
-    def update_history(self, stock_name):
-        self.msg.clear()
-        stock_index = self.stock_name_list.index(stock_name)
-        self.msg.append(self.stock_class_list[stock_index].download_history_data())
-        self.is_action_successful = True
 
     def update_all(self):
         """更新所有股票資訊"""
-        self.msg.clear()
         if self.stock_class_list:
             for stock in self.stock_class_list:
-                self.msg.append(stock.download_history_data())
-            self.is_action_successful = True
+                stock.download_history_data()
         else:
-            debug_msg(is_debug, "There is no data in the system.")
-            self.msg.append("There is no data in the system.")
-            self.is_action_successful = False
-
-    def get_stock_list(self):
-        """顯示庫存的CSV名稱"""
-        if self.stock_name_list:
-            return self.stock_name_list
-        else:
-            debug_msg(is_debug, "No Data.")
-            self.msg.append("No Data.")
-            return False
-
-    def get_company_info(self, stock_name):
-        self.msg.clear()
-        stock_index = self.stock_name_list.index(stock_name)
-        try:
-            if self.stock_class_list[stock_index].get_company_info():
-                info = self.stock_class_list[stock_index].company_info
-
-                self.msg.append(info)
-                debug_msg(is_debug, info)
-                self.is_action_successful = True
-                return info
-            else:
-                self.is_action_successful = False
-
-        except Exception as e:
-            self.msg.append(f"{stock_name}: {e}")
-            self.is_action_successful = False
+            print("There is no data in the system.")
 
     def show_stock_list(self):
         """顯示庫存的CSV名稱"""
@@ -150,10 +81,6 @@ class StockManager:
                 print(f"{index:>3d}. {stock}")
         else:
             print("No Data.")
-    
-    def get_analysis(self, stock_name):
-        stock_index = self.stock_name_list.index(stock_name)
-        return self.stock_class_list[stock_index].test()
 
 
 class Stock:
@@ -170,22 +97,20 @@ class Stock:
 
     def download_ticker(self):
         """下載 ticker"""
+        try:
+            self.ticker = yf.Ticker(self.stock_name)
 
-        self.ticker = yf.Ticker(self.stock_name)
+            # 股票名稱錯誤時，仍會返回一個dict，利用下列特徵確認股票名稱是否正確
+            if 'previousClose' not in self.ticker.info:
+                print("Stock name error.")
+                # raise AssertionError("Stock name error.")
+                return False
+            else:
+                return self.ticker
 
-        # 股票名稱錯誤時，仍會返回一個dict，利用下列特徵確認股票名稱是否正確
-        if 'previousClose' not in self.ticker.info:
-            # raise AssertionError("Stock name error.")
-            self.ticker = False
+        except Exception as e:
+            print("Error:", e)
             return False
-        else:
-            return self.ticker
-
-    def get_company_info(self):
-        self.download_ticker()
-        if self.ticker:
-            self.company_info = self.ticker.info
-        return self.ticker
 
     def show_company_info(self):
         """顯示 CompanyInfo"""
@@ -198,48 +123,46 @@ class Stock:
             self.company_info = self.ticker.info
 
         for key in self.company_info.keys():
-            debug_msg(is_debug, f"{key:30s} {self.company_info[key]}")
+            print(f"{key:30s} {self.company_info[key]}")
 
     def show_history_data(self):
         """顯示 HistoryData"""
         if self.history_data is None:
             self.load_history()
-        debug_msg(is_debug, self.history_data)
+        print(self.history_data)
 
     def load_history(self):
         """讀取 HistoryData"""
         try:
             self.history_data = pd.read_csv(self.history_data_file_path)
         except Exception as e:
-            debug_msg(is_debug, e)
-            return e
+            print(e)
 
     def download_history_data(self, period: str = 'max', interval: str = '1d'):
         """Download HistoryData"""
+        # 舊方法
+        # import pandas_datareader.data
+        # yf.pdr_override()
+        # start_date = dt.datetime(1900, 1, 10)
+        # end_date = dt.datetime(2100, 3, 18)
+        # self.history = pandas_datareader.data.get_data_yahoo(self.stockName, start_date, end_date)
 
         self.ticker = self.download_ticker()
 
-        try:
-            if self.ticker:
-                self.history_data = self.ticker.history(period=period, interval=interval)
-                self.history_data['Date'] = pd.to_datetime(self.history_data.index).strftime('%Y-%m-%d')
-                self.history_data.to_csv(self.history_data_file_path, index=False)
-                debug_msg(is_debug, f"{self.stock_name}: Update completed.")
-                return f"{self.stock_name}: Update completed."
-            else:
-                debug_msg(is_debug, "Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/")
-                return f"{self.stock_name}: Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/."
-        except Exception as e:
-            return f"{self.stock_name}: {e}"
+        if self.ticker:
+            self.history_data = self.ticker.history(period=period, interval=interval)
+            self.history_data.to_csv(self.history_data_file_path)
+            print(f"{self.stock_name} Update completed")
+        else:
+            # 錯誤資訊會於self.download_ticker()顯示
+            pass
 
     def test(self):
-        a = TestFun(self.history_data_file_path, self.stock_name)
-        a.step1()
-        return a.step2()
+        a = TestFun(self.history_data_file_path)
 
 
 class TestFun():
-    def __init__(self, history_data_file_path, stock_name):
+    def __init__(self, history_data_file_path):
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.time_step = 60  # 使用前60天的數據進行預測
         self.scaled_close_prices = None
@@ -247,29 +170,10 @@ class TestFun():
         self.x_test = None
         self.y_train = None
         self.y_test = None
-
-        self.stock_name = stock_name
         self.history_data_file_path = history_data_file_path
 
-    def show_open_data(self):
-        data = pd.read_csv(self.history_data_file_path)
-        
-        # 創建Plotly圖表
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], mode='lines', name='收盤價'))
-        
-        # 設置圖表佈局
-        fig.update_layout(
-            title=f"{self.stock_name} 收盤價",
-            xaxis_title="日期",
-            yaxis_title="收盤價 (USD)",
-            xaxis_rangeslider_visible=True
-        )
-        
-        # 使用st.plotly_chart顯示圖表
-        st.plotly_chart(fig)
-        
-        return fig
+        self.step1()
+        self.step2()
 
     def step1(self):
         # 讀取CSV文件
@@ -287,8 +191,8 @@ class TestFun():
         # 拆分數據集為訓練和測試集
         train_size = int(len(x) * 0.8)
         test_size = len(x) - train_size
-        self.x_train, self.x_test = x[0:train_size], x[test_size:len(x)]
-        self.y_train, self.y_test = y[0:train_size], y[test_size:len(y)]
+        self.x_train, self.x_test = x[0:train_size], x[train_size:len(x)]
+        self.y_train, self.y_test = y[0:train_size], y[train_size:len(y)]
 
         # 將數據reshape為Transformer模型的輸入格式
         self.x_train = self.x_train.reshape(self.x_train.shape[0], self.x_train.shape[1], 1)
@@ -321,8 +225,8 @@ class TestFun():
         self.y_test = self.scaler.inverse_transform([self.y_test])
 
         # 使用Streamlit顯示結果
-        st.subheader('Stock Price Prediction using Transformer')
-        st.subheader(f'{self.stock_name} Stock Price')
+        st.title('Stock Price Prediction using Transformer')
+        st.subheader('AAPL Stock Price')
 
         # 繪製結果
         fig, ax = plt.subplots(figsize=(16, 8))
@@ -334,7 +238,6 @@ class TestFun():
         ax.legend()
         # 使用Streamlit顯示圖表
         st.pyplot(fig)
-        return fig
 
     @staticmethod
     def create_dataset(data, time_step=1):

@@ -7,7 +7,7 @@ __version__ = "1.0.0"
 
 def main():
     # Get the absolute path and create a StockManager to manage downloaded historical data
-    manager = StockManager(abs_path=os.path.abspath("../"))
+    manager = StockManager(abs_path=os.path.dirname(os.path.abspath(__file__)))
 
     while True:
         while True:
