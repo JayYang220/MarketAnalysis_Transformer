@@ -234,8 +234,12 @@ class Stock:
 
     def test(self):
         a = TestFun(self.history_data_file_path, self.stock_name)
+        msg = st.empty()
+        msg.write(f"###### Please wait a moment. This may take a few minutes.")
         a.step1()
-        return a.step2()
+        result = a.step2()
+        msg.write(f"###### Done.")
+        return result
 
 
 class TestFun():
@@ -249,14 +253,12 @@ class TestFun():
         self.y_test = None
 
         self.stock_name = stock_name
-        self.history_data_file_path = history_data_file_path
+        self.data = pd.read_csv(history_data_file_path)
 
     def show_open_data(self):
-        data = pd.read_csv(self.history_data_file_path)
-        
         # 創建Plotly圖表
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data["Date"], y=data["Close"], mode='lines', name='收盤價'))
+        fig.add_trace(go.Scatter(x=self.data["Date"], y=self.data["Close"], mode='lines', name='收盤價'))
         
         # 設置圖表佈局
         fig.update_layout(
@@ -272,11 +274,8 @@ class TestFun():
         return fig
 
     def step1(self):
-        # 讀取CSV文件
-        data = pd.read_csv(self.history_data_file_path)
-
         # 選擇'Close'
-        close_prices = data[['Close']].values
+        close_prices = self.data[['Close']].values
 
         # 標準化數據
         self.scaled_close_prices = self.scaler.fit_transform(close_prices)
@@ -306,7 +305,6 @@ class TestFun():
 
         # 編譯模型
         transformer_model.compile(optimizer='adam', loss='mean_squared_error')
-
         # 訓練模型
         transformer_model.fit(self.x_train, self.y_train, batch_size=32, epochs=10, validation_data=(self.x_test, self.y_test))
 
@@ -325,15 +323,18 @@ class TestFun():
         st.subheader(f'{self.stock_name} Stock Price')
 
         # 繪製結果
-        fig, ax = plt.subplots(figsize=(16, 8))
-        ax.plot(self.scaler.inverse_transform(self.scaled_close_prices), label='Original Data')
-        ax.plot(np.arange(self.time_step, len(train_predict) + self.time_step), train_predict, label='Training Prediction')
-        ax.plot(
-            np.arange(len(train_predict) + (2 * self.time_step), len(train_predict) + (2 * self.time_step) + len(test_predict)),
-            test_predict, label='Testing Prediction')
-        ax.legend()
-        # 使用Streamlit顯示圖表
-        st.pyplot(fig)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=np.arange(len(self.scaled_close_prices)), y=self.scaler.inverse_transform(self.scaled_close_prices).flatten(), mode='lines', name='原始數據'))
+        fig.add_trace(go.Scatter(x=np.arange(self.time_step, len(train_predict) + self.time_step), y=train_predict.flatten(), mode='lines', name='Training Prediction'))
+        fig.add_trace(go.Scatter(x=np.arange(len(train_predict) + (2 * self.time_step), len(train_predict) + (2 * self.time_step) + len(test_predict)), y=test_predict.flatten(), mode='lines', name='Testing Prediction'))
+        
+        # Set chart layout
+        fig.update_layout(
+            title=f"{self.stock_name}",
+            xaxis_title="Date",
+            yaxis_title="Closing Price (USD)",
+            xaxis_rangeslider_visible=True
+        )
         return fig
 
     @staticmethod

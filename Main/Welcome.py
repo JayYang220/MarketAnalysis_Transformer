@@ -19,8 +19,9 @@ st.set_page_config(
     }
 )
 
-st.title("Welcome!")
-st.subheader("Please chose a function to start.")
 manager = load_data()
+st.title("Welcome!")
+st.subheader("Please select a function from the sidebar.")
+
 
 # menu()  # Render the dynamic menu!
