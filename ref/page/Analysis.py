@@ -1,5 +1,5 @@
 import streamlit as st
-from Welcome import manager
+from app import manager
 
 stock_list = manager.get_stock_list()
 output_list = []
@@ -13,7 +13,10 @@ if stock_list:
         submit_button = st.form_submit_button(label='Start')
 
         if submit_button:
+            msg = st.empty()
+            msg.write(f"###### Please wait a moment. This may take a few minutes.")
             fig = manager.get_analysis(form_gender)
+            msg.write(f"###### Done.")
             st.plotly_chart(fig)
             
 else:

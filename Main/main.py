@@ -2,8 +2,9 @@ import os
 from API import StockManager
 
 debug = False
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 
+# This is the function for test the code
 
 def main():
     # Get the absolute path and create a StockManager to manage downloaded historical data
@@ -11,9 +12,23 @@ def main():
 
     while True:
         while True:
-            print('Downloaded data:')
-            manager.show_stock_list()
-            ans = '0' if debug else input('Select a stock from the list or choose another option. (A=Add New Stock, U=Update all History)\n')
+            msg = "Select a function or stock from the list.\n"
+            options = {
+                "A": "Add New Stock",
+                "U": "Update all History",
+                "D": "Delete Stock",
+            }
+            for key, value in options.items():
+                msg += f"{key}: {value}\n"
+
+            msg += "Downloaded data:\n"
+            if manager.get_stock_list():
+                for index, stock in enumerate(manager.msg):
+                    msg += f"{index}. {stock}\n"
+            else:
+                msg += f"{manager.msg}\n"
+
+            ans = input(msg)
 
             try:
                 ans = int(ans)
@@ -22,11 +37,14 @@ def main():
                     break
 
             except ValueError:
-                if ans.lower() == "a":
+                if ans.upper() == "A":
                     stock_name = input("Please enter the stock name (Ex:2330.TW).\n")
-                    manager.create_stock_class(stock_name)
-                elif ans.lower() == "u":
+                    manager.add_stock(stock_name)
+                elif ans.upper() == "U":
                     manager.update_all()
+                elif ans.upper() == "D":
+                    stock_name = input("Please enter the stock name (Ex:2330.TW).\n")
+                    manager.remove_stock(stock_name=stock_name)
                 else:
                     print("Input error")
 
@@ -34,25 +52,55 @@ def main():
                 print(f"Unknown Error: {e}")
 
         while True:
-            ans = 't' if debug else input("Select an action. (I=Show Company Info, H=Show History Data, U=Update History Data, T=Transformer, 0=Return)\n")
+            options = {
+                "I": "Show Company Info",
+                "H": "Show History Data",
+                "U": "Update History Data",
+                "S": "Show Prediction",
+                "RT": "Retrain Model",
+                "N": "New Model",
+                "0": "Return"
+            }
+            msg = "Select an action.\n"
+            for key, value in options.items():
+                msg += f"{key}: {value}\n"
+            ans = input(msg)
 
-            if ans.lower() == "i":
+            if ans.upper() == "I":
                 # Show Company Info
-                manager.stock_class_list[index].show_company_info()
-            elif ans.lower() == "h":
+                info = manager.refresh_company_info(stock_index=index)
+                if info:
+                    for key in info.keys():
+                        print(f"{key:30s} {info[key]}")
+            elif ans.upper() == "H":
                 # Show History Data
-                manager.stock_class_list[index].show_history_data()
-            elif ans.lower() == "u":
+                manager.show_history_data(index)
+            elif ans.upper() == "U":
                 # Update History Data
-                manager.stock_class_list[index].download_history_data()
-            elif ans.lower() == "t":
-                manager.stock_class_list[index].test()
+                manager.update_history(stock_index=index)
+            elif ans.upper() == "S":
+                kwargs = {
+                    'stock_index': index,
+                }
+                manager.get_analysis_console(**kwargs)
+            elif ans.upper() == "RT":
+                kwargs = {
+                    'stock_index': index,
+                    'retrain_model': True,
+                }
+                manager.get_analysis_console(**kwargs)
+            elif ans.upper() == "N":
+                kwargs = {
+                    'stock_index': index,
+                    'creat_new_model': True,
+                }
+                manager.get_analysis_console(**kwargs)
             elif ans == "0":
                 break
 
             if debug:
                 os.system('pause')
-
+                
 
 if __name__ == "__main__":
     main()
