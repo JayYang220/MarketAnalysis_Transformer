@@ -1,8 +1,6 @@
 import streamlit as st
 from Welcome import manager
 
-output_list = []
-
 if manager.stock_name_list and manager.model_name_list:
     # Verify the user's role
     st.subheader("Prediction:")
@@ -32,4 +30,3 @@ else:
     st.subheader("There is no data and model in your repositories. Please download data and create a new model first.")
     if st.button("ManageHistoryData", args=("pages/1ManageHistoryData.py",)):
         st.switch_page("pages/1ManageHistoryData.py")
-

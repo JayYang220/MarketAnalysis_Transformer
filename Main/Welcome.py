@@ -11,7 +11,7 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': '',
+        # 'Get Help': '',
         'About': f"MarketAnalysis_Transformer Version {__version__}"
     }
 )

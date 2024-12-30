@@ -1,13 +1,12 @@
 import pandas as pd
 import numpy as np
 import math
-import os
 
 import plotly.graph_objects as go
-import matplotlib
+# import matplotlib
 # matplotlib.use('TkAgg')
 # matplotlib.use('webagg')
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
 
@@ -49,8 +48,8 @@ class ModelControl:
         self.X_train_tensor, self.y_train_tensor = None, None
         self.X_test_tensor, self.y_test_tensor = None, None
 
-        self.creat_new_model = kwargs.get('creat_new_model', False)
-        self.retrain_model = kwargs.get('retrain_model', False)
+        self.create_new_model = kwargs['create_new_model']
+        self.retrain_model = kwargs['retrain_model']
         self.showFig = kwargs.get('show_fig', None)
         self.showGoFig = kwargs.get('show_go_fig', None)
         self.display_epochs = kwargs.get('display_epochs', 10)
@@ -77,7 +76,7 @@ class ModelControl:
         
         self.output_func("Building/Loading model...")
         self.model = self.__step2_build_model()
-        if self.creat_new_model or self.retrain_model:
+        if self.create_new_model or self.retrain_model:
             return
 
         self.output_func("Predicting...")
@@ -136,10 +135,10 @@ class ModelControl:
         
         model = ModelControl._TransformerTimeSeries(feature_size=feature_size, num_layers=num_layers, nhead=nhead, hidden_dim=hidden_dim, dropout=dropout).to(device)
 
-        if not self.creat_new_model:
+        if not self.create_new_model:
             model.load_state_dict(torch.load(self.src_model_path))
 
-        if self.creat_new_model or self.retrain_model:
+        if self.create_new_model or self.retrain_model:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
             criterion = nn.MSELoss()

@@ -3,11 +3,6 @@
 import yfinance as yf
 import os
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-import streamlit as st
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 from .learner import ModelControl
 from common import debug_msg
 from typing import Callable
@@ -307,8 +302,8 @@ class StockManager:
         if 'dst_model_name' in kwargs:
             kwargs['dst_model_path'] = os.path.join(self.model_folder_path, kwargs['dst_model_name']) + ".pth"
 
-        if 'creat_new_model' in kwargs and 'retrain_model' in kwargs:
-            raise ValueError("creat_new_model and retrain_model cannot be used together.")
+        if kwargs['create_new_model'] and kwargs['retrain_model']:
+            raise ValueError("create_new_model and retrain_model cannot be used together.")
         else:
             return self.show_prediction(**kwargs)
     

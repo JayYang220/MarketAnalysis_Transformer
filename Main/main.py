@@ -1,10 +1,10 @@
 import os
 from API import StockManager
 
-debug = False
+debug = True
 __version__ = "1.2.0"
 
-# This is the function for test the code
+# This is the main point for testing the code without using streamlit
 
 def main():
     # Get the absolute path and create a StockManager to manage downloaded historical data
