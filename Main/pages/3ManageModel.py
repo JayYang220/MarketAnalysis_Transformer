@@ -1,5 +1,8 @@
 import streamlit as st
-from Welcome import manager
+try:
+    from Welcome import manager
+except:
+    st.switch_page("Welcome.py")
 from common import refresh_btn
 
 def check_submit(**kwargs) -> list[str]:

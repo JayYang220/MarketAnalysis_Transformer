@@ -1,5 +1,8 @@
 import streamlit as st
-from Welcome import manager
+try:
+    from Welcome import manager
+except:
+    st.switch_page("Welcome.py")
 
 if manager.stock_name_list and manager.model_name_list:
     # Verify the user's role
