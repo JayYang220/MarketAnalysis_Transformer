@@ -3,14 +3,10 @@
 This project aims to explore the prediction model of stock prices and display the prediction results to users through visualization tools.
 
 ## Version Info
-### 2024/12/30 version 1.2.3
+### 2024/12/30 version 1.2.4
+- Fixed some issues
 - Fixed the issue that when the user switches the page but manager is not initialized, the page will be redirected to Welcome.py.
-
-### 2024/12/30 version 1.2.2
-- Fixed some issues.
-
-### 2024/12/30 version 1.2.1
-- Fixed some issues.
+- Add display range to Prediction page.
 
 ### 2024/12/27 version 1.2.0
 - Fixed the model library used

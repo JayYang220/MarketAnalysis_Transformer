@@ -2,7 +2,7 @@ import streamlit as st
 from API import StockManager
 import os
 
-__version__ = "1.2.3"
+__version__ = "1.2.4"
 
 # https://blog.jiatool.com/posts/streamlit_2023/
 st.set_page_config(

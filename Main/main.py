@@ -2,7 +2,7 @@ import os
 from API import StockManager
 
 debug = True
-__version__ = "1.2.3"
+__version__ = "1.2.4"
 
 # This is the main point for testing the code without using streamlit
 

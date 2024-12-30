@@ -301,7 +301,7 @@ class StockManager:
         
         if 'dst_model_name' in kwargs:
             kwargs['dst_model_path'] = os.path.join(self.model_folder_path, kwargs['dst_model_name']) + ".pth"
-
+        print(kwargs['create_new_model'], kwargs['retrain_model'])
         if kwargs['create_new_model'] and kwargs['retrain_model']:
             raise ValueError("create_new_model and retrain_model cannot be used together.")
         else:

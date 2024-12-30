@@ -15,7 +15,7 @@ def check_submit(**kwargs) -> list[str]:
     if kwargs['key'] == 'add':
         if kwargs['using_data'] > manager.get_stock_data_len(kwargs['stock_name']) or kwargs['using_data'] < 1:
             error_msg.append(f"###### The number of data to use is greater than the data length of {kwargs['stock_name']} or less than 1.")
-        if kwargs['test_data_len'] > 99 or kwargs['test_data_len'] < 1:
+        if kwargs['train_size'] > 0.99 or kwargs['train_size'] < 0.01:
             error_msg.append(f"###### The percentage of data for training is greater than 99% or less than 1%.")
         if kwargs['window_width'] < 2 or kwargs['window_width'] > 100:
             error_msg.append(f"###### The window width is less than 2 or greater than 100.")
@@ -105,7 +105,7 @@ if manager.stock_name_list:
                                     format_func=lambda x: f"{x} (data length:{manager.get_stock_data_len(x)})", 
                                     options=manager.stock_name_list)
             using_data = st.number_input('Number of data to use (e.g. setting to 100 means using the latest 100 data):', min_value=1, value=manager.get_stock_data_len(stock_name))
-            test_data_len = st.number_input('Percentage of data for training (other will be used for testing):', placeholder='80', value=80)
+            training_percent = st.number_input('Percentage of data for training (other will be used for testing):', placeholder='80', value=80)
             display_epochs = st.number_input('How many epochs to display each time:', placeholder='10', value=10)
             window_width = st.number_input('Window width:', placeholder='20', value=20)
 
@@ -117,7 +117,7 @@ if manager.stock_name_list:
             dropout = st.number_input('Dropout rate:', placeholder='0.1', value=0.1)
             
 
-            default_model_name = f'{stock_name}_{using_data}_{test_data_len}_{window_width}_{num_epochs}_{num_layers}_{nhead}_{hidden_dim}_{dropout:.2f}'
+            default_model_name = f'{stock_name}_{using_data}_{training_percent}_{window_width}_{num_epochs}_{num_layers}_{nhead}_{hidden_dim}_{dropout:.2f}'
 
             if retrain_model:
                 src_model_name = st.selectbox('Select a model to retrain:', manager.model_name_list)
@@ -130,7 +130,7 @@ if manager.stock_name_list:
                 'key': 'add',
                 'stock_name': stock_name,
                 'using_data': using_data,
-                'test_data_len': test_data_len,
+                'train_size': training_percent / 100,
                 'window_width': window_width,
                 'num_epochs': num_epochs,
                 'num_layers': num_layers,
@@ -150,7 +150,7 @@ if manager.stock_name_list:
             if submit_button1:
                 if error_msg:
                     for i in error_msg:
-                        st.write(i)
+                        st.error(i)
                 else:
                     with st.status("###### Please wait a moment. This may take a few minutes...", expanded=True) as status:
                         kwargs['output_func'] = lambda msg: st.success(f"###### {msg}")
@@ -177,7 +177,7 @@ if manager.stock_name_list:
             if submit_button3:
                 if error_msg:
                     for i in error_msg:
-                        st.write(i)
+                        st.error(i)
                 else:
                     if manager.rename_model(src_model_name, dst_model_name, output_func=lambda msg: st.write(f"###### {msg}")):
                         refresh_btn()

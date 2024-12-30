@@ -25,11 +25,11 @@ class ModelControl:
         self.column = kwargs['column']
         self.output_func = kwargs.get('output_func', print)
 
-        self.use_data = 1000 # 使用最後n筆資料量
-        self.dataFrame = pd.read_csv(kwargs['history_data_path'])[-self.use_data:]
+        self.using_data = kwargs['using_data']
+        self.dataFrame = pd.read_csv(kwargs['history_data_path'])[-self.using_data:]
         self.src_model_path = kwargs.get('src_model_path', None)
         self.dst_model_path = kwargs.get('dst_model_path', None)
-        self.train_size = 0.8
+        self.train_size = kwargs.get('train_size', 0.8)
         self.test_size = 1 - self.train_size
 
         self.test_length = 0
@@ -64,6 +64,7 @@ class ModelControl:
     def start(self):
         self.output_func("Preprocessing data...")
         data = self.dataFrame[[self.column]].copy()
+        print("data len: ", len(data))
         # data[self.column] = data[self.column].pct_change() # 計算百分比變化
         # data[self.column] = data[self.column].fillna(1)  # 將NaN值轉換為1
         data[self.column] = self.scaler.fit_transform(data[[self.column]])
@@ -229,7 +230,7 @@ class ModelControl:
         plt.title(f'{self.stock_name} {self.column} Prediction - Transformer Model')
         plt.xlabel('Time')
         plt.ylabel(f'{self.column} (USD)')
-        plt.xticks(ticks=range(0, len(time[-self.test_length:]), self.use_data//100), labels=time[-self.test_length::self.use_data//100], rotation=45)  # 每隔5個顯示一個時間標籤
+        plt.xticks(ticks=range(0, len(time[-self.test_length:]), self.using_data//100), labels=time[-self.test_length::self.using_data//100], rotation=45)  # 每隔5個顯示一個時間標籤
         plt.legend()
         plt.show()
 
