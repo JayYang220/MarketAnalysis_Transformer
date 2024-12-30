@@ -3,6 +3,9 @@
 This project aims to explore the prediction model of stock prices and display the prediction results to users through visualization tools.
 
 ## Version Info
+### 2024/12/30 version 1.2.2
+- Fixed some issues.
+
 ### 2024/12/30 version 1.2.1
 - Fixed some issues.
 
