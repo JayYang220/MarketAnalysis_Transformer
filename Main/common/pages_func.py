@@ -1,5 +1,6 @@
 import streamlit as st
 import inspect
+
 def refresh_btn():
     """
     The button to refresh the page.

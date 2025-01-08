@@ -1,8 +1,14 @@
-import streamlit as st
-from API import StockManager
 import os
+os.environ['MODE'] = 'streamlit'
+os.environ['LOG_MODE'] = 'debug'
+os.environ['ROOT_PATH'] = os.path.abspath(os.path.dirname(__file__))
 
-__version__ = "1.2.4"
+import streamlit as st
+from common import __version__, init_streamlit
+
+# init stock manager
+if st.session_state.get('stock_manager') is None:
+    st.session_state['stock_manager'] = init_streamlit().manager
 
 # https://blog.jiatool.com/posts/streamlit_2023/
 st.set_page_config(
@@ -16,6 +22,5 @@ st.set_page_config(
     }
 )
 
-manager = StockManager(abs_path=os.path.dirname(os.path.abspath(__file__)))
 st.title("Welcome!")
 st.subheader("Please select a function from the sidebar.")

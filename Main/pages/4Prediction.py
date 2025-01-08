@@ -1,15 +1,43 @@
 import streamlit as st
-try:
-    from Welcome import manager
-except:
-    st.switch_page("Welcome.py")
+from API import StockManager
 
-def check_value(**kwargs):
+if 'stock_manager' not in st.session_state:
+    st.switch_page("Welcome.py")
+else:
+    from API import StockManager
+    manager: StockManager = st.session_state['stock_manager']
+
+class restore_msg:
+    """This class is used to restore the message and wait for output it."""
+    def __init__(self, output_func):
+        self.msg = None
+        self.output_func = output_func
+
+    def __call__(self, *args):
+        self.msg = args
+
+    def write(self):
+        if self.msg:
+            self.output_func(*self.msg)
+
+def check_submit(**kwargs):
+    """
+    Check the input data is valid. If not, return the error message list.
+    Return:
+        - list[str]: The error message list.
+    """
     error_msg = []
     if kwargs['using_data'] > manager.get_stock_data_len(kwargs['stock_name']):
-        error_msg.append("Using data is greater than the data length.")
+        error_msg.append("###### Using data is greater than the data length.")
     if kwargs['using_data'] < 1:
-        error_msg.append("Using data is less than 1.")
+        error_msg.append("###### Using data is less than 1.")
+    if kwargs['predict_days'] < 0:
+        error_msg.append("###### Prediction days is less than 0.")
+    if kwargs['predict_days'] > 100:
+        error_msg.append("###### Prediction days is greater than 100.")
+    if kwargs['window_width'] < 2 or kwargs['window_width'] > 100:
+        error_msg.append("###### The window width is less than 2 or greater than 100.")
+
     return error_msg
 
 if manager.stock_name_list and manager.model_name_list:
@@ -18,9 +46,11 @@ if manager.stock_name_list and manager.model_name_list:
     stock_name = st.selectbox('Select a item to predict:', 
                         format_func=lambda x: f"{x} (data length:{manager.get_stock_data_len(x)})", 
                         options=manager.stock_name_list)
-    using_data = st.number_input('Display Range:', placeholder='1000', value=1000, min_value=1)
+    using_data = st.number_input('Number of data to use (e.g. setting to 100 means using the latest 100 data):', value=manager.get_stock_data_len(stock_name), min_value=1)
+    display_range = st.number_input('Display Range:', value=manager.get_stock_data_len(stock_name), min_value=1)
+    window_width = st.number_input('Window width:', placeholder='20', value=20)
+    prediction_days = st.number_input('Prediction Days:', placeholder='10', value=10, min_value=0)
     src_model_name = st.selectbox('Select a model to predict:', options=manager.model_name_list)
-
 
     submit_button = st.button(label='Prediction')
 
@@ -28,16 +58,27 @@ if manager.stock_name_list and manager.model_name_list:
         kwargs = {
             'stock_name': stock_name,
             'src_model_name': src_model_name,
-            'create_new_model': False,
-            'retrain_model': False,
             'using_data' : using_data,
+            'operation_mode': 'predict',
+            'predict_days': prediction_days,
+            'display_range': display_range,
+            'window_width': window_width,
         }
-        error_msg = check_value(**kwargs)
+        error_msg = check_submit(**kwargs)
         if error_msg:
             for i in error_msg:
                 st.error(i)
         else:
-            fig = manager.get_analysis(**kwargs)
+            test_MSE_msg = restore_msg(st.write)
+            train_MSE_msg = restore_msg(st.write)
+            with st.status("###### Please wait a moment. This may take a few minutes...", expanded=True) as status:
+                kwargs['output_func'] = lambda msg: st.success(f"###### {msg}")
+                kwargs['test_MSE_func'] = lambda *args: test_MSE_msg(*args)
+                kwargs['train_MSE_func'] = lambda *args: train_MSE_msg(*args)
+                fig = manager.get_analysis(**kwargs)
+                status.update(label="###### Done.", state="complete", expanded=False)
+            test_MSE_msg.write()
+            train_MSE_msg.write()
             st.plotly_chart(fig)
 
 elif not manager.stock_name_list:

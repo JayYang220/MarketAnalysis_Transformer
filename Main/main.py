@@ -1,14 +1,19 @@
 import os
-from API import StockManager
+os.environ['MODE'] = 'console'
+os.environ['EXC_MODE'] = 'debug'
+os.environ['ROOT_PATH'] = os.path.abspath(os.path.dirname(__file__))
 
-debug = True
-__version__ = "1.2.4"
+from API import StockManager
+from common import init_logger, log_stream, __version__
 
 # This is the main point for testing the code without using streamlit
 
 def main():
-    # Get the absolute path and create a StockManager to manage downloaded historical data
-    manager = StockManager(abs_path=os.path.dirname(os.path.abspath(__file__)))
+    MODE = os.getenv('MODE')
+    init_logger(logger_name=MODE)
+    log_stream(MODE, 'info', f'{MODE} mode {__version__} logging started.')
+    # create a StockManager to manage downloaded historical data
+    manager = StockManager()
 
     while True:
         while True:
@@ -70,8 +75,10 @@ def main():
                 # Show Company Info
                 info = manager.refresh_company_info(stock_index=index)
                 if info:
-                    for key in info.keys():
-                        print(f"{key:30s} {info[key]}")
+                    for key in manager.stock_class_list[index].company_info.keys():
+                        print(f"{key:30s} {manager.stock_class_list[index].company_info[key]}")
+                else:
+                    print("No company info found.")
             elif ans.upper() == "H":
                 # Show History Data
                 manager.show_history_data(index)
@@ -97,9 +104,6 @@ def main():
                 manager.get_analysis_console(**kwargs)
             elif ans == "0":
                 break
-
-            if debug:
-                os.system('pause')
                 
 
 if __name__ == "__main__":

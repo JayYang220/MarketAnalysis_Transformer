@@ -1,9 +1,11 @@
 import streamlit as st
-try:
-    from Welcome import manager
-except:
-    st.switch_page("Welcome.py")
 from common import refresh_btn
+
+if 'stock_manager' not in st.session_state:
+    st.switch_page("Welcome.py")
+else:
+    from API import StockManager
+    manager: StockManager = st.session_state['stock_manager']
 
 def action(**kwargs):
     """

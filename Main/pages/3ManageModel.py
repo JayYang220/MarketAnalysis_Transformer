@@ -1,9 +1,11 @@
 import streamlit as st
-try:
-    from Welcome import manager
-except:
-    st.switch_page("Welcome.py")
 from common import refresh_btn
+
+if 'stock_manager' not in st.session_state:
+    st.switch_page("Welcome.py")
+else:
+    from API import StockManager
+    manager: StockManager = st.session_state['stock_manager']
 
 def check_submit(**kwargs) -> list[str]:
     """
@@ -106,7 +108,7 @@ if manager.stock_name_list:
                                     options=manager.stock_name_list)
             using_data = st.number_input('Number of data to use (e.g. setting to 100 means using the latest 100 data):', min_value=1, value=manager.get_stock_data_len(stock_name))
             training_percent = st.number_input('Percentage of data for training (other will be used for testing):', placeholder='80', value=80)
-            display_epochs = st.number_input('How many epochs to display each time:', placeholder='10', value=10)
+            display_epochs = st.number_input('How many epochs to display each time:', placeholder='5', value=5)
             window_width = st.number_input('Window width:', placeholder='20', value=20)
 
             st.write("#### Model Settings:")
@@ -140,9 +142,11 @@ if manager.stock_name_list:
                 'src_model_name': src_model_name,
                 'dst_model_name': dst_model_name,
                 'display_epochs': display_epochs,
-                'create_new_model': create_new_model,
-                'retrain_model': retrain_model
             }
+            if retrain_model:
+                kwargs['operation_mode'] = 'retrain'
+            else:
+                kwargs['operation_mode'] = 'create'
             error_msg = check_submit(**kwargs)   
 
             submit_button1 = st.button(label='Start', key='submit_button1', disabled=st.session_state['disable_btn'], on_click=lambda: diable_btn(error_msg))

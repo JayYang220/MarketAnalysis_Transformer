@@ -4,19 +4,25 @@ import yfinance as yf
 import os
 import pandas as pd
 from .learner import ModelControl
-from common import debug_msg
+from common import log_stream
 from typing import Callable
+import datetime
+import pytz
+import traceback
 
 is_debug = True
+ROOT_PATH = os.getenv('ROOT_PATH')
+MODE = os.getenv('MODE')
+
 # ref = refresh
 
 class StockManager:
-    def __init__(self, abs_path):
-        self.history_data_folder_path = os.path.join(abs_path, "data")
-        self.model_folder_path = os.path.join(abs_path, "model")
+    def __init__(self):
+        self.history_data_folder_path = os.path.join(ROOT_PATH, "data")
+        self.model_folder_path = os.path.join(ROOT_PATH, "model")
         self.__init_dir()
 
-        # 讀取庫存的CSV名稱 集中成list管理
+        # 讀取庫存的CSV和model名稱 集中成list管理
         self.stock_name_list = self.__load_stock_list()
         self.model_name_list = self.__load_model_list()
 
@@ -26,11 +32,11 @@ class StockManager:
         self.msg = []
         self.is_action_successful = False
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls):
         """singleton"""
         if not hasattr(cls, 'instance'):
             cls.instance = super(StockManager, cls).__new__(cls)
-            cls.instance.__init__(*args, **kwargs)
+            cls.instance.__init__()
         return cls.instance
 
     def __init_dir(self):
@@ -46,8 +52,11 @@ class StockManager:
         此函式僅在初期建立obj時使用，其餘增刪修都由其他函式負責
         """
         file_list = os.listdir(self.history_data_folder_path)
-        file_list_without_extension = [os.path.splitext(file)[0] if file.endswith('.csv') else file for file in file_list]
-        return file_list_without_extension
+        stock_list = []
+        for file in file_list:
+            if file.endswith('.csv'):
+                stock_list.append(os.path.splitext(file)[0])
+        return stock_list
 
     def __load_model_list(self) -> list[str]:
         """
@@ -55,8 +64,11 @@ class StockManager:
         此函式僅在初期建立obj時使用，其餘增刪修都由其他函式負責
         """
         file_list = os.listdir(self.model_folder_path)
-        file_list_without_extension = [os.path.splitext(file)[0] if file.endswith('.pth') else file for file in file_list]
-        return file_list_without_extension
+        model_list = []
+        for file in file_list:
+            if file.endswith('.pth'):
+                model_list.append(os.path.splitext(file)[0])
+        return model_list
     
     def rename_model(self, model_name: str, new_model_name: str, output_func: Callable[[str], None]):
         """重命名模型"""
@@ -64,14 +76,16 @@ class StockManager:
 
         try:
             os.rename(os.path.join(self.model_folder_path, model_name + ".pth"), os.path.join(self.model_folder_path, new_model_name + ".pth"))
+            os.rename(os.path.join(self.model_folder_path, model_name + ".json"), os.path.join(self.model_folder_path, new_model_name + ".json"))
             self.model_name_list[self.model_name_list.index(model_name)] = new_model_name
             output_func(f"{model_name}: Rename completed.")
-            debug_msg(is_debug, f"{model_name}: Rename completed.")
+            log_stream(MODE, 'info', f"{model_name}: Rename completed.")
             return True
             
         except Exception as e:
             output_func(f"{model_name}: {e}")
-            debug_msg(is_debug, e)
+            log_stream(MODE, 'error', f"{model_name}: {e}")
+            log_stream(MODE, 'debug', traceback.format_exc())
             self.is_action_successful = False
             return False
     
@@ -80,13 +94,16 @@ class StockManager:
         self.is_action_successful = True
         try:
             os.remove(os.path.join(self.model_folder_path, model_name + ".pth"))
+            if os.path.exists(os.path.join(self.model_folder_path, model_name + ".json")):
+                os.remove(os.path.join(self.model_folder_path, model_name + ".json"))
             self.model_name_list.remove(model_name)
             output_func(f"{model_name}: Remove completed.")
-            debug_msg(is_debug, f"{model_name}: Remove completed.")
+            log_stream(MODE, 'info', f"{model_name}: Remove completed.")
             return True
         except Exception as e:
             output_func(f"{model_name}: {e}")
-            debug_msg(is_debug, e)
+            log_stream(MODE, 'error', e)
+            log_stream(MODE, 'debug', traceback.format_exc())
             self.is_action_successful = False
             return False
 
@@ -117,7 +134,7 @@ class StockManager:
         self.is_action_successful = True
         if stock_name in self.stock_name_list:
             self.is_action_successful = False
-            debug_msg(is_debug, f"{stock_name}: This stock already exists in the list.")
+            log_stream(MODE, 'info', f"{stock_name}: This stock already exists in the list.")
             output_func(f"{stock_name}: This stock already exists in the list.")
             return
 
@@ -128,7 +145,7 @@ class StockManager:
             if stock._download_ticker():
                 stock.download_history_data()
 
-                debug_msg(is_debug, f"{stock_name}: Addition completed")
+                log_stream(MODE, 'info', f"{stock_name}: Addition completed")
                 output_func(f"{stock_name}: Addition completed")
 
                 self.stock_class_list.append(stock)
@@ -140,7 +157,8 @@ class StockManager:
 
         except Exception as e:
             self.is_action_successful = False
-            debug_msg(is_debug, e)
+            log_stream(MODE, 'error', e)
+            log_stream(MODE, 'debug', traceback.format_exc())
             output_func(f"{stock_name}: {e}")
             return
 
@@ -170,11 +188,11 @@ class StockManager:
         if self.stock_class_list:
             for stock in self.stock_class_list:
                 msg = stock.download_history_data()
-                debug_msg(is_debug, msg)
+                log_stream(MODE, 'info', msg)
                 output_func(msg)
         else:
             msg = "There is no data in the system."
-            debug_msg(is_debug, msg)
+            log_stream(MODE, 'info', msg)
             self.is_action_successful = False
             output_func(msg)
 
@@ -206,12 +224,13 @@ class StockManager:
             self.stock_name_list.remove(stock_name)
             self.stock_class_list.pop(stock_index)
             output_func(f"{stock_name}: Remove completed.")
-            debug_msg(is_debug, f"{stock_name}: Remove completed.")
+            log_stream(MODE, 'info', f"{stock_name}: Remove completed.")
 
             self.is_action_successful = True
         except Exception as e:
             output_func(f"{stock_name}: {e}")
-            debug_msg(is_debug, e)
+            log_stream(MODE, 'error', e)
+            log_stream(MODE, 'debug', traceback.format_exc())
             self.is_action_successful = False
 
     # for streamlit, console
@@ -223,8 +242,8 @@ class StockManager:
                 self.msg.append(i)
             return True
         else:
-            debug_msg(is_debug, "No Data.")
-            self.msg.append("No Data.")
+            log_stream(MODE, 'info', "No Data in the system.")
+            self.msg.append("No Data in the system.")
             return False
 
     # for console
@@ -233,9 +252,9 @@ class StockManager:
         if self.stock_class_list[stock_index].history_data is None:
             try:
                 self.stock_class_list[stock_index].history_data = pd.read_csv(self.stock_class_list[stock_index].history_data_file_path)
-                print(self.stock_class_list[stock_index].history_data)
             except Exception as e:
-                debug_msg(is_debug, e)
+                log_stream(MODE, 'error', e)
+                log_stream(MODE, 'debug', traceback.format_exc())
                 return e
         
     def refresh_company_info(self, **kwargs):
@@ -249,13 +268,13 @@ class StockManager:
             stock_index = kwargs["stock_index"]
             stock_name = self.stock_name_list[stock_index]
         else:
-            return
+            raise ValueError("stock_name or stock_index is required")
         
         try:
             if self.stock_class_list[stock_index].download_company_info():
                 self.msg.append(self.stock_class_list[stock_index].company_info.copy())
 
-                debug_msg(is_debug, self.msg[-1])
+                log_stream(MODE, 'info', f"{stock_name}: {self.msg[-1]}")
                 self.is_action_successful = True
                 return True
             else:
@@ -264,6 +283,8 @@ class StockManager:
 
         except Exception as e:
             self.msg.append(f"{stock_name}: {e}")
+            log_stream(MODE, 'error', e)
+            log_stream(MODE, 'debug', traceback.format_exc())
             self.is_action_successful = False
             return False
     
@@ -275,18 +296,24 @@ class StockManager:
         kwargs['src_model_path'] = self.stock_class_list[kwargs['stock_index']].model_file_path
         kwargs['dst_model_path'] = self.stock_class_list[kwargs['stock_index']].model_file_path
 
+        creat_new_model = kwargs.get('creat_new_model', False)
+        retrain_model = kwargs.get('retrain_model', False)
+        kwargs['create_new_model'] = creat_new_model
+        kwargs['retrain_model'] = retrain_model
+
         if os.path.exists(kwargs['dst_model_path']):
-            if self.creat_new_model:
+            if creat_new_model:
                 ans = input("Model file already exists. Do you want to overwrite it? (y/n)")
                 if ans.lower() != "y":
                     return
-        elif kwargs['retrain_model']:
+        elif retrain_model:
                 print("Model file not found. Please create a new model first.")
                 return
         else:
             kwargs['creat_new_model'] = True
+        
 
-        return self.show_prediction(**kwargs)
+        return self.__show_prediction(**kwargs)
 
     # for streamlit
     def get_analysis(self, **kwargs) -> bool:
@@ -301,20 +328,19 @@ class StockManager:
         
         if 'dst_model_name' in kwargs:
             kwargs['dst_model_path'] = os.path.join(self.model_folder_path, kwargs['dst_model_name']) + ".pth"
-        print(kwargs['create_new_model'], kwargs['retrain_model'])
-        if kwargs['create_new_model'] and kwargs['retrain_model']:
-            raise ValueError("create_new_model and retrain_model cannot be used together.")
-        else:
-            return self.show_prediction(**kwargs)
+
+        return self.__show_prediction(**kwargs)
     
-    def show_prediction(self, **kwargs):
+    def __show_prediction(self, **kwargs):
         kwargs['history_data_path'] = self.stock_class_list[kwargs['stock_index']].history_data_file_path
         kwargs['column'] = "Close"
 
         a = ModelControl(**kwargs)
         a.start()
+
+        # 可能會有增減model，更新model_name_list
         self.model_name_list = self.__load_model_list()
-        return a.fig
+        return a._fig
 
 class Stock:
     def __init__(self, history_data_folder_path: str, model_folder_path: str, stock_name: str):
@@ -328,7 +354,7 @@ class Stock:
 
         # 初始化為None，待使用者輸入需求時再抓取
         self.ticker = None
-        self.company_info: dict = None
+        self.company_info = {}
         self.history_data = None
 
     def get_data_len(self) -> int:
@@ -342,14 +368,53 @@ class Stock:
 
         # 股票名稱錯誤時，仍會返回一個dict，利用下列特徵確認股票名稱是否正確
         if 'previousClose' not in self.ticker.info:
+            log_stream(MODE, 'error', f"Failed to download ticker for {self.stock_name}.")
             return False
         else:
+            log_stream(MODE, 'info', f'Downloaded ticker for {self.stock_name}.')
             return True
+        
+    def __format_company_info(self):
+        """格式化company_info"""
+        # 保留的key與對應名稱
+        keys_dict = {'symbol': 'Symbol', 'shortName': 'Short Name', 'longName': 'Long Name', 'timeZoneFullName': 'Time Zone',
+                    'timeZoneShortName': 'Time Zone (UTC)', 'firstTradeDateEpochUtc': 'First Trade Date', 'exchange': 'Exchange',
+                    'quoteType': 'Quote Type', 'currency': 'Currency', 'marketCap': 'Market Cap', 'open': 'Open',
+                    'previousClose': 'Previous Close', 'dayHigh': 'Day High', 'dayLow': 'Day Low', 'fiftyDayAverage': '50 Days Average',
+                    'twoHundredDayAverage': '200 Days Average', 'fiftyTwoWeekHigh': '52 Weeks High', 'fiftyTwoWeekLow': '52 Weeks Low',
+                    'volume': 'Volume', 'averageVolume': 'Average Volume', 'averageVolume10days': 'Average Volume 10 Days'}
+        
+        for key in keys_dict.keys():
+            try:
+                if key in self.ticker.info:
+                    if key == 'firstTradeDateEpochUtc':
+                        self.company_info[keys_dict[key]] = datetime.datetime.fromtimestamp(self.ticker.info[key])
+                    elif key == "marketCap" or key == "volume" or key == "averageVolume" or key == "averageVolume10days":
+                        self.company_info[keys_dict[key]] = "{:,}".format(self.ticker.info[key])
+                    elif key == "timeZoneShortName":
+                        self.company_info[keys_dict[key]] = self.__get_utc_offset(self.ticker.info[key])
+                    else:
+                        self.company_info[keys_dict[key]] = self.ticker.info[key]
+            except Exception as e:
+                log_stream(MODE, 'error', f"{self.stock_name}, format_company_info key error: {key}: {e}")
+                log_stream(MODE, 'debug', traceback.format_exc())
+
+    @staticmethod
+    def __get_utc_offset(timezone: str) -> str:
+        """根據時區名稱返回UTC偏移量"""
+        try:
+            tz = pytz.timezone(timezone)
+            offset = tz.utcoffset(datetime.datetime.now()).total_seconds() / 3600
+            return f"{timezone} (UTC{offset:+.0f})"
+        except Exception as e:
+            log_stream(MODE, 'error', f"{timezone}, get_utc_offset error: {e}")
+            log_stream(MODE, 'debug', traceback.format_exc())
+            return timezone
 
     def download_company_info(self) -> bool:
         # 強制更新ticker
         if self._download_ticker():
-            self.company_info = self.ticker.info
+            self.__format_company_info()
             return True
         else:
             return False
@@ -361,10 +426,10 @@ class Stock:
                 self.history_data = self.ticker.history(period=period, interval=interval)
                 self.history_data['Date'] = pd.to_datetime(self.history_data.index).strftime('%Y-%m-%d')
                 self.history_data.to_csv(self.history_data_file_path, index=False)
-                debug_msg(is_debug, f"{self.stock_name}: Update completed.")
+                log_stream(MODE, 'info', f"{self.stock_name}: Update completed.")
                 return f"{self.stock_name}: Update completed."
             else:
-                debug_msg(is_debug, "Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/")
+                log_stream(MODE, 'error', "Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/")
                 return f"{self.stock_name}: Stock name error. You can retrieve stock names from Yahoo Finance. https://finance.yahoo.com/."
         except Exception as e:
             return f"{self.stock_name}: {e}"

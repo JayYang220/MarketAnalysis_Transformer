@@ -1,14 +1,16 @@
 import streamlit as st
-try:
-    from Welcome import manager
-except:
+
+if 'stock_manager' not in st.session_state:
     st.switch_page("Welcome.py")
+else:
+    from API import StockManager
+    manager: StockManager = st.session_state['stock_manager']
 
 if manager.stock_name_list:
     # Verify the user's role
     st.subheader("Company Information:")
     with st.form(key='history'):
-        stock_name = st.selectbox('Please select a item:', manager.stock_name_list)
+        stock_name = st.selectbox('Select a item:', manager.stock_name_list)
 
         submit_button = st.form_submit_button(label='Search')
 
