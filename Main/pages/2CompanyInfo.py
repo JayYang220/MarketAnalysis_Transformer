@@ -1,10 +1,7 @@
 import streamlit as st
+from common import init_manager
 
-if 'stock_manager' not in st.session_state:
-    st.switch_page("Welcome.py")
-else:
-    from API import StockManager
-    manager: StockManager = st.session_state['stock_manager']
+manager = init_manager()
 
 if manager.stock_name_list:
     # Verify the user's role

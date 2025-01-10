@@ -4,6 +4,10 @@ This project aims to explore the prediction model of stock prices and display th
 
 ## Version Info
 
+### 2025/01/10 version 1.2.6
+Temporary version
+- Moved some common functions to common
+
 ### 2025/01/08 version 1.2.5
 Temporary version
 - Modified some architecture and logging output

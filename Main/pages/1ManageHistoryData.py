@@ -1,11 +1,7 @@
 import streamlit as st
-from common import refresh_btn
+from common import refresh_btn, init_manager
 
-if 'stock_manager' not in st.session_state:
-    st.switch_page("Welcome.py")
-else:
-    from API import StockManager
-    manager: StockManager = st.session_state['stock_manager']
+manager = init_manager()
 
 def action(**kwargs):
     """

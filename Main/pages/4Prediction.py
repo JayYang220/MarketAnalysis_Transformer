@@ -1,11 +1,7 @@
 import streamlit as st
-from API import StockManager
+from common import init_manager, check_submit
 
-if 'stock_manager' not in st.session_state:
-    st.switch_page("Welcome.py")
-else:
-    from API import StockManager
-    manager: StockManager = st.session_state['stock_manager']
+manager = init_manager()
 
 class restore_msg:
     """This class is used to restore the message and wait for output it."""
@@ -19,26 +15,6 @@ class restore_msg:
     def write(self):
         if self.msg:
             self.output_func(*self.msg)
-
-def check_submit(**kwargs):
-    """
-    Check the input data is valid. If not, return the error message list.
-    Return:
-        - list[str]: The error message list.
-    """
-    error_msg = []
-    if kwargs['using_data'] > manager.get_stock_data_len(kwargs['stock_name']):
-        error_msg.append("###### Using data is greater than the data length.")
-    if kwargs['using_data'] < 1:
-        error_msg.append("###### Using data is less than 1.")
-    if kwargs['predict_days'] < 0:
-        error_msg.append("###### Prediction days is less than 0.")
-    if kwargs['predict_days'] > 100:
-        error_msg.append("###### Prediction days is greater than 100.")
-    if kwargs['window_width'] < 2 or kwargs['window_width'] > 100:
-        error_msg.append("###### The window width is less than 2 or greater than 100.")
-
-    return error_msg
 
 if manager.stock_name_list and manager.model_name_list:
     # Verify the user's role
@@ -64,7 +40,7 @@ if manager.stock_name_list and manager.model_name_list:
             'display_range': display_range,
             'window_width': window_width,
         }
-        error_msg = check_submit(**kwargs)
+        error_msg = check_submit(key='prediction', **kwargs)
         if error_msg:
             for i in error_msg:
                 st.error(i)

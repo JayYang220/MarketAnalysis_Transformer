@@ -1,61 +1,7 @@
 import streamlit as st
-from common import refresh_btn
+from common import refresh_btn, init_manager, check_submit
 
-if 'stock_manager' not in st.session_state:
-    st.switch_page("Welcome.py")
-else:
-    from API import StockManager
-    manager: StockManager = st.session_state['stock_manager']
-
-def check_submit(**kwargs) -> list[str]:
-    """
-    Check the input data is valid. If not, return the error message list.
-    Return:
-        - list[str]: The error message list.
-    """
-    error_msg = []
-    if kwargs['key'] == 'add':
-        if kwargs['using_data'] > manager.get_stock_data_len(kwargs['stock_name']) or kwargs['using_data'] < 1:
-            error_msg.append(f"###### The number of data to use is greater than the data length of {kwargs['stock_name']} or less than 1.")
-        if kwargs['train_size'] > 0.99 or kwargs['train_size'] < 0.01:
-            error_msg.append(f"###### The percentage of data for training is greater than 99% or less than 1%.")
-        if kwargs['window_width'] < 2 or kwargs['window_width'] > 100:
-            error_msg.append(f"###### The window width is less than 2 or greater than 100.")
-        if kwargs['num_epochs'] < 1 or kwargs['num_epochs'] > 1000:
-            error_msg.append(f"###### The number of epochs is less than 1 or greater than 1000.")
-        if kwargs['num_layers'] < 1:
-            error_msg.append(f"###### The number of layers is less than 1.")
-        if kwargs['nhead'] < 1:
-            error_msg.append(f"###### The number of heads is less than 1.")
-        if kwargs['hidden_dim'] < 1:
-            error_msg.append(f"###### The hidden dimension is less than 1.")
-        if kwargs['dropout'] < 0 or kwargs['dropout'] > 1:
-            error_msg.append(f"###### The dropout rate is less than 0 or greater than 1.")
-        if len(kwargs['dst_model_name']) < 1:
-            error_msg.append(f"###### The model name is empty.")
-        if len(kwargs['dst_model_name']) > 200:
-            error_msg.append(f"###### The model name is longer than 200 characters.")
-        if kwargs['dst_model_name'].find(kwargs['stock_name']) == -1:
-            error_msg.append(f"###### The stock name should be in the model name.")
-
-        if kwargs['src_model_name'] == kwargs['dst_model_name']:
-            error_msg.append(f"###### The new model name is the same as the original model name.")
-        elif kwargs['dst_model_name'] in manager.model_name_list:
-            error_msg.append(f"###### The model name already exists.")
-
-        if kwargs['display_epochs'] < 1:
-            error_msg.append(f"###### The number of epochs to display each time is less than 1.")
-
-    if kwargs['key'] == 'rename':
-        if kwargs['dst_model_name'] in manager.model_name_list:
-            error_msg.append(f"###### The new model name already exists.")
-
-    return error_msg
-
-if 'create_new_model' not in st.session_state:
-    st.session_state['create_new_model'] = True
-if 'retrain_model' not in st.session_state:
-    st.session_state['retrain_model'] = False
+manager = init_manager()
 
 def switch_create_new_model():
     if st.session_state['create_new_model']:
@@ -65,7 +11,6 @@ def switch_create_new_model():
         st.session_state['create_new_model'] = True
         st.session_state['retrain_model'] = False
 
-
 def switch_retrain_model():
     if st.session_state['retrain_model']:
         st.session_state['create_new_model'] = True
@@ -74,12 +19,6 @@ def switch_retrain_model():
         st.session_state['create_new_model'] = False
         st.session_state['retrain_model'] = True
 
-
-if 'disable_btn' not in st.session_state:
-    st.session_state['disable_btn'] = False
-if 'submitted' not in st.session_state:
-    st.session_state['submitted'] = False
-
 if st.session_state['submitted']:
     # 如果是在提交按紐時，不將按紐設為可用
     st.session_state['submitted'] = False
@@ -87,7 +26,7 @@ else:
     # 其他狀況時，確保按紐可用
     st.session_state['disable_btn'] = False
 
-def diable_btn(error_msg: list[str]):
+def diable_btn(error_msg: list[str]=[]):
     if not error_msg:
         st.session_state['disable_btn'] = True
         st.session_state['submitted'] = True
@@ -129,7 +68,6 @@ if manager.stock_name_list:
                 dst_model_name = st.text_input('New model name:', value=default_model_name, placeholder=default_model_name)    
 
             kwargs = {
-                'key': 'add',
                 'stock_name': stock_name,
                 'using_data': using_data,
                 'train_size': training_percent / 100,
@@ -147,7 +85,7 @@ if manager.stock_name_list:
                 kwargs['operation_mode'] = 'retrain'
             else:
                 kwargs['operation_mode'] = 'create'
-            error_msg = check_submit(**kwargs)   
+            error_msg = check_submit(key='add_model', **kwargs)   
 
             submit_button1 = st.button(label='Start', key='submit_button1', disabled=st.session_state['disable_btn'], on_click=lambda: diable_btn(error_msg))
 
@@ -170,11 +108,10 @@ if manager.stock_name_list:
             dst_model_name = st.text_input('New name:', value=src_model_name, placeholder=src_model_name)
 
             kwargs = {
-                'key': 'rename',
                 'src_model_name': src_model_name,
                 'dst_model_name': dst_model_name
             }
-            error_msg = check_submit(**kwargs)
+            error_msg = check_submit(key='rename_model', **kwargs)
 
             submit_button3 = st.button(label='Rename', disabled=st.session_state['disable_btn'], on_click=lambda: diable_btn(error_msg))
 

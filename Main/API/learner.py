@@ -322,6 +322,7 @@ class ModelControl:
                 predicted_prices.append(next_price[-1, 0])
                 new_input = torch.tensor([[[next_price[-1, 0]]]])
                 src = torch.cat((src[:, 1:, :], new_input.repeat(self.window_width, 1, 1)), dim=1)
+
         predicted_prices = torch.tensor(predicted_prices).unsqueeze(1)
         return predicted_prices
     
